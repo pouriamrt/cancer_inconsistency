@@ -1,0 +1,726 @@
+<html>
+    <head>
+        <meta charset="utf-8">
+        
+            <script>function neighbourhoodHighlight(params) {
+  // console.log("in nieghbourhoodhighlight");
+  allNodes = nodes.get({ returnType: "Object" });
+  // originalNodes = JSON.parse(JSON.stringify(allNodes));
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    highlightActive = true;
+    var i, j;
+    var selectedNode = params.nodes[0];
+    var degrees = 2;
+
+    // mark all nodes as hard to read.
+    for (let nodeId in allNodes) {
+      // nodeColors[nodeId] = allNodes[nodeId].color;
+      allNodes[nodeId].color = "rgba(200,200,200,0.5)";
+      if (allNodes[nodeId].hiddenLabel === undefined) {
+        allNodes[nodeId].hiddenLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+    var connectedNodes = network.getConnectedNodes(selectedNode);
+    var allConnectedNodes = [];
+
+    // get the second degree nodes
+    for (i = 1; i < degrees; i++) {
+      for (j = 0; j < connectedNodes.length; j++) {
+        allConnectedNodes = allConnectedNodes.concat(
+          network.getConnectedNodes(connectedNodes[j])
+        );
+      }
+    }
+
+    // all second degree nodes get a different color and their label back
+    for (i = 0; i < allConnectedNodes.length; i++) {
+      // allNodes[allConnectedNodes[i]].color = "pink";
+      allNodes[allConnectedNodes[i]].color = "rgba(150,150,150,0.75)";
+      if (allNodes[allConnectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[allConnectedNodes[i]].label =
+          allNodes[allConnectedNodes[i]].hiddenLabel;
+        allNodes[allConnectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // all first degree nodes get their own color and their label back
+    for (i = 0; i < connectedNodes.length; i++) {
+      // allNodes[connectedNodes[i]].color = undefined;
+      allNodes[connectedNodes[i]].color = nodeColors[connectedNodes[i]];
+      if (allNodes[connectedNodes[i]].hiddenLabel !== undefined) {
+        allNodes[connectedNodes[i]].label =
+          allNodes[connectedNodes[i]].hiddenLabel;
+        allNodes[connectedNodes[i]].hiddenLabel = undefined;
+      }
+    }
+
+    // the main node gets its own color and its label back.
+    // allNodes[selectedNode].color = undefined;
+    allNodes[selectedNode].color = nodeColors[selectedNode];
+    if (allNodes[selectedNode].hiddenLabel !== undefined) {
+      allNodes[selectedNode].label = allNodes[selectedNode].hiddenLabel;
+      allNodes[selectedNode].hiddenLabel = undefined;
+    }
+  } else if (highlightActive === true) {
+    // console.log("highlightActive was true");
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      // allNodes[nodeId].color = "purple";
+      allNodes[nodeId].color = nodeColors[nodeId];
+      // delete allNodes[nodeId].color;
+      if (allNodes[nodeId].hiddenLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].hiddenLabel;
+        allNodes[nodeId].hiddenLabel = undefined;
+      }
+    }
+    highlightActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    // console.log("Nothing was selected");
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        // console.log(allNodes[nodeId]);
+        // allNodes[nodeId].color = {};
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function filterHighlight(params) {
+  allNodes = nodes.get({ returnType: "Object" });
+  // if something is selected:
+  if (params.nodes.length > 0) {
+    filterActive = true;
+    let selectedNodes = params.nodes;
+
+    // hiding all nodes and saving the label
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = true;
+      if (allNodes[nodeId].savedLabel === undefined) {
+        allNodes[nodeId].savedLabel = allNodes[nodeId].label;
+        allNodes[nodeId].label = undefined;
+      }
+    }
+
+    for (let i=0; i < selectedNodes.length; i++) {
+      allNodes[selectedNodes[i]].hidden = false;
+      if (allNodes[selectedNodes[i]].savedLabel !== undefined) {
+        allNodes[selectedNodes[i]].label = allNodes[selectedNodes[i]].savedLabel;
+        allNodes[selectedNodes[i]].savedLabel = undefined;
+      }
+    }
+
+  } else if (filterActive === true) {
+    // reset all nodes
+    for (let nodeId in allNodes) {
+      allNodes[nodeId].hidden = false;
+      if (allNodes[nodeId].savedLabel !== undefined) {
+        allNodes[nodeId].label = allNodes[nodeId].savedLabel;
+        allNodes[nodeId].savedLabel = undefined;
+      }
+    }
+    filterActive = false;
+  }
+
+  // transform the object into an array
+  var updateArray = [];
+  if (params.nodes.length > 0) {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  } else {
+    for (let nodeId in allNodes) {
+      if (allNodes.hasOwnProperty(nodeId)) {
+        updateArray.push(allNodes[nodeId]);
+      }
+    }
+    nodes.update(updateArray);
+  }
+}
+
+function selectNode(nodes) {
+  network.selectNodes(nodes);
+  neighbourhoodHighlight({ nodes: nodes });
+  return nodes;
+}
+
+function selectNodes(nodes) {
+  network.selectNodes(nodes);
+  filterHighlight({nodes: nodes});
+  return nodes;
+}
+
+function highlightFilter(filter) {
+  let selectedNodes = []
+  let selectedProp = filter['property']
+  if (filter['item'] === 'node') {
+    let allNodes = nodes.get({ returnType: "Object" });
+    for (let nodeId in allNodes) {
+      if (allNodes[nodeId][selectedProp] && filter['value'].includes((allNodes[nodeId][selectedProp]).toString())) {
+        selectedNodes.push(nodeId)
+      }
+    }
+  }
+  else if (filter['item'] === 'edge'){
+    let allEdges = edges.get({returnType: 'object'});
+    // check if the selected property exists for selected edge and select the nodes connected to the edge
+    for (let edge in allEdges) {
+      if (allEdges[edge][selectedProp] && filter['value'].includes((allEdges[edge][selectedProp]).toString())) {
+        selectedNodes.push(allEdges[edge]['from'])
+        selectedNodes.push(allEdges[edge]['to'])
+      }
+    }
+  }
+  selectNodes(selectedNodes)
+}</script>
+            <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/dist/vis-network.min.css" integrity="sha512-WgxfT5LWjfszlPHXRmBWHkV2eceiWTOBvrKCNbdgDYTHrT2AeLCGbF4sZlZw3UMN3WtL0tGUoIAKsu8mllg/XA==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+            <script src="https://cdnjs.cloudflare.com/ajax/libs/vis-network/9.1.2/dist/vis-network.min.js" integrity="sha512-LnvoEWDFrqGHlHmDD2101OrLcbsfkrzoSpvtSQtxK3RMnRV0eOkhhBN2dXHKRrUU8p2DGRTk35n4O8nWSVe1mQ==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+            
+            
+            
+            
+            
+                <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/css/tom-select.min.css" integrity="sha512-43fHB3GLgZfz8QXl1RPQ8O66oIgv3po9cJ5erMt1c4QISq9dYb195T3vr5ImnJPXuVroKcGBPXBFKETW8jrPNQ==" crossorigin="anonymous" referrerpolicy="no-referrer" />
+                <script src="https://cdnjs.cloudflare.com/ajax/libs/tom-select/2.0.0-rc.4/js/tom-select.complete.js" integrity="sha512-jeF9CfnvzDiw9G9xiksVjxR2lib44Gnovvkv+3CgCG6NXCD4gqlA5nDAVW5WjpA+i+/zKsUWV5xNEbW1X/HH0Q==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+            
+
+        
+<center>
+<h1></h1>
+</center>
+
+<!-- <link rel="stylesheet" href="../node_modules/vis/dist/vis.min.css" type="text/css" />
+<script type="text/javascript" src="../node_modules/vis/dist/vis.js"> </script>-->
+        <link
+          href="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/css/bootstrap.min.css"
+          rel="stylesheet"
+          integrity="sha384-eOJMYsd53ii+scO/bJGFsiCZc+5NDVN2yr8+0RDqr0Ql0h+rP48ckxlpbzKgwra6"
+          crossorigin="anonymous"
+        />
+        <script
+          src="https://cdn.jsdelivr.net/npm/bootstrap@5.0.0-beta3/dist/js/bootstrap.bundle.min.js"
+          integrity="sha384-JEW9xMcG8R+pH31jmWH6WWP0WintQrMb4s7ZOdauHnUtxwoG2vI5DkLtS3qm9Ekf"
+          crossorigin="anonymous"
+        ></script>
+
+
+        <center>
+          <h1></h1>
+        </center>
+        <style type="text/css">
+
+             #mynetwork {
+                 width: 100%;
+                 height: 1400px;
+                 background-color: #eeeeee;
+                 border: 1px solid lightgray;
+                 position: relative;
+                 float: left;
+             }
+
+             
+
+             
+
+             
+        </style>
+    </head>
+
+
+    <body>
+        <div class="card" style="width: 100%">
+            
+                <div id="select-menu" class="card-header">
+                    <div class="row no-gutters">
+                        <div class="col-10 pb-2">
+                            <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="selectNode([value]);"
+                            id="select-node"
+                            placeholder="Select node..."
+                            >
+                                <option selected>Select a Node by ID</option>
+                                
+                                    <option value="presentedMAIN">presentedMAIN</option>
+                                
+                                    <option value="MEASURES_Indications">MEASURES_Indications</option>
+                                
+                                    <option value="We">We</option>
+                                
+                                    <option value="data">data</option>
+                                
+                                    <option value="using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     ">using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     </option>
+                                
+                                    <option value="care">care</option>
+                                
+                                    <option value="who">who</option>
+                                
+                                    <option value="thyroid_surgery">thyroid_surgery</option>
+                                
+                                    <option value="thyroidectomy_procedures">thyroidectomy_procedures</option>
+                                
+                                    <option value="neck_dissection">neck_dissection</option>
+                                
+                                    <option value="completion_thyroidectomy">completion_thyroidectomy</option>
+                                
+                                    <option value="aspiration_FNA">aspiration_FNA</option>
+                                
+                                    <option value="node_metastasis">node_metastasis</option>
+                                
+                                    <option value="metastases">metastases</option>
+                                
+                                    <option value="Sixtysix_patients">Sixtysix_patients</option>
+                                
+                                    <option value="cancer">cancer</option>
+                                
+                                    <option value="patients">patients</option>
+                                
+                                    <option value="iodine">iodine</option>
+                                
+                                    <option value="testing">testing</option>
+                                
+                                    <option value="preoperative_cords_assessment">preoperative_cords_assessment</option>
+                                
+                                    <option value="procedures">procedures</option>
+                                
+                                    <option value="recurrences">recurrences</option>
+                                
+                                    <option value="RAI">RAI</option>
+                                
+                                    <option value="outcomes">outcomes</option>
+                                
+                                    <option value="thyroid_surgery_Specific_data">thyroid_surgery_Specific_data</option>
+                                
+                                    <option value="Specific_data">Specific_data</option>
+                                
+                                    <option value="Patients">Patients</option>
+                                
+                                    <option value="search">search</option>
+                                
+                                    <option value="thyroidectomy_Surgeries">thyroidectomy_Surgeries</option>
+                                
+                                    <option value="adult_surgeon_surgeon">adult_surgeon_surgeon</option>
+                                
+                                    <option value="nerve_monitoring">nerve_monitoring</option>
+                                
+                                    <option value="series_procedures">series_procedures</option>
+                                
+                                    <option value="endocrine_surgeons">endocrine_surgeons</option>
+                                
+                                    <option value="approach">approach</option>
+                                
+                                    <option value="surgeons_endocrine_surgeons">surgeons_endocrine_surgeons</option>
+                                
+                                    <option value="range">range</option>
+                                
+                                    <option value="Transient_hypocalcemia">Transient_hypocalcemia</option>
+                                
+                                    <option value="comparisons">comparisons</option>
+                                
+                                    <option value="thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection">thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection</option>
+                                
+                                    <option value="pathology">pathology</option>
+                                
+                                    <option value="cancer_MTC">cancer_MTC</option>
+                                
+                                    <option value="Eightyone_patients">Eightyone_patients</option>
+                                
+                                    <option value="thyroid_cancer_goiter_Table_Indications">thyroid_cancer_goiter_Table_Indications</option>
+                                
+                                    <option value="case">case</option>
+                                
+                                    <option value="thyroid_cancer">thyroid_cancer</option>
+                                
+                                    <option value="which">which</option>
+                                
+                                    <option value="FNA">FNA</option>
+                                
+                                    <option value="notion">notion</option>
+                                
+                                    <option value="they">they</option>
+                                
+                                    <option value="surgery">surgery</option>
+                                
+                                    <option value="thyroidectomy_Hypocalcemia">thyroidectomy_Hypocalcemia</option>
+                                
+                                    <option value="calcium_levels">calcium_levels</option>
+                                
+                                    <option value="complications">complications</option>
+                                
+                                    <option value="node_metastasis_patients">node_metastasis_patients</option>
+                                
+                                    <option value="lung_None">lung_None</option>
+                                
+                                    <option value="wound_infection_tracheal_injury">wound_infection_tracheal_injury</option>
+                                
+                                    <option value="resection">resection</option>
+                                
+                                    <option value="cases">cases</option>
+                                
+                                    <option value="iodine_RAI">iodine_RAI</option>
+                                
+                                    <option value="Children">Children</option>
+                                
+                                    <option value="risk">risk</option>
+                                
+                                    <option value="studies">studies</option>
+                                
+                                    <option value="sensitivity_specificity">sensitivity_specificity</option>
+                                
+                                    <option value="predictors_involvement_subtype_tumor_stage">predictors_involvement_subtype_tumor_stage</option>
+                                
+                                    <option value="this">this</option>
+                                
+                                    <option value="number">number</option>
+                                
+                                    <option value="us">us</option>
+                                
+                                    <option value="THYROID_MED_JULYAUGUST">THYROID_MED_JULYAUGUST</option>
+                                
+                                    <option value="hypocalcemia">hypocalcemia</option>
+                                
+                                    <option value="to_reach_statistical_significance">to_reach_statistical_significance</option>
+                                
+                                    <option value="it">it</option>
+                                
+                                    <option value="that">that</option>
+                                
+                                    <option value="previously26_Multiple_studies">previously26_Multiple_studies</option>
+                                
+                                    <option value="study">study</option>
+                                
+                                    <option value="highvolume_endocrine_surgeons">highvolume_endocrine_surgeons</option>
+                                
+                                    <option value="outcomes_lengths">outcomes_lengths</option>
+                                
+                                    <option value="This">This</option>
+                                
+                                    <option value="authors">authors</option>
+                                
+                                    <option value="nature">nature</option>
+                                
+                                    <option value="validity_quality">validity_quality</option>
+                                
+                                    <option value="Hameed_R_Zacharin">Hameed_R_Zacharin</option>
+                                
+                                    <option value="management">management</option>
+                                
+                                    <option value="Brain_P_Butler_G_et_al_Thyroid_Surgery_Eur_J_Pediatr_Surg">Brain_P_Butler_G_et_al_Thyroid_Surgery_Eur_J_Pediatr_Surg</option>
+                                
+                                    <option value="LX_Cai_Y_Schwenk_et_al_Pediatric_Endocrine_Surgery">LX_Cai_Y_Schwenk_et_al_Pediatric_Endocrine_Surgery</option>
+                                
+                                    <option value="I">I</option>
+                                
+                                    <option value="factor_analysis">factor_analysis</option>
+                                
+                                    <option value="size_interpretation_model_Onco">size_interpretation_model_Onco</option>
+                                
+                                    <option value="Ther__Papillary_thyroid_carcinoma_Barisella_M_Ferrari">Ther__Papillary_thyroid_carcinoma_Barisella_M_Ferrari</option>
+                                
+                            </select>
+                        </div>
+                        <div class="col-2 pb-2">
+                            <button type="button" class="btn btn-primary btn-block" onclick="neighbourhoodHighlight({nodes: []});">Reset Selection</button>
+                        </div>
+                    </div>
+                </div>
+            
+            
+              <div id="filter-menu" class="card-header">
+                <div class="row no-gutters">
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'item')"
+                            id="select-item"
+                        >
+                        <option value="">Select a network item</option>
+                        <option value="edge">edge</option>
+                        <option value="node">node</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            onchange="updateFilter(value, 'property')"
+                            id="select-property"
+                        >
+                        <option value="">Select a property...</option>
+                    </select>
+                  </div>
+                  <div class="col-3 pb-2">
+                    <select
+                            class="form-select"
+                            aria-label="Default select example"
+                            id="select-value"
+                        >
+                        <option value="">Select value(s)...</option>
+                    </select>
+                  </div>
+                  <div class="col-1 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="highlightFilter(filter);">Filter</button>
+                  </div>
+                  <div class="col-2 pb-2">
+                    <button type="button" class="btn btn-primary btn-block" onclick="clearFilter(true)">Reset Selection</button>
+                  </div>
+                </div>
+              </div>
+            
+            <div id="mynetwork" class="card-body"></div>
+        </div>
+
+        
+        
+
+        <script type="text/javascript">
+
+              // initialize global variables.
+              var edges;
+              var nodes;
+              var allNodes;
+              var allEdges;
+              var nodeColors;
+              var originalNodes;
+              var network;
+              var container;
+              var options, data;
+              var filter = {
+                  item : '',
+                  property : '',
+                  value : []
+              };
+
+              
+                  new TomSelect("#select-node",{
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      }
+                  });
+              
+
+              
+                  // explicitly using onItemAdd and this function as we need to save multiple values
+                  let updateValueFilter = function() {
+                      return function () {
+                      filter['value'].push(arguments[0])
+                      }
+                  }
+
+                  let valueControl = new TomSelect("#select-value",{
+                      maxItems: null,
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: updateValueFilter()
+                  });
+
+                  let addValues = function() {
+                      return function () {
+                          // clear the current value options and add the selected attribute values
+                          // tom-select handles duplicates
+                          let selectedProperty = arguments[0];
+                          valueControl.clear();
+                          valueControl.clearOptions();
+                          filter['value'] = []
+                          if (filter['item'] === 'node') {
+                              for (let each in allNodes) {
+                                  valueControl.addOption({
+                                      id:allNodes[each][selectedProperty],
+                                      title:allNodes[each][selectedProperty]
+                                  })
+                              }
+                          }
+                          else if (filter['item'] === 'edge') {
+                              for (let each in allEdges) {
+                                  valueControl.addOption({
+                                      id:allEdges[each][selectedProperty],
+                                      title:allEdges[each][selectedProperty]
+                                  })
+                              }
+                          }
+                      }
+                  };
+
+                  let propControl = new TomSelect("#select-property",{
+                      valueField: 'id',
+                      labelField: 'title',
+                      searchField: 'title',
+                      create: false,
+                      sortField: {
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addValues()
+                  });
+
+                  let addProperties = function() {
+                      return function () {
+                          // loops through the selected network item and adds the attributes to dropdown
+                          // tom-select handles duplicates
+                          clearFilter(false)
+                          if (arguments[0] === 'edge') {
+                              for (let each in allEdges) {
+                                  if (allEdges.hasOwnProperty(each)) {
+                                      for (let eachProp in allEdges[each]) {
+                                          if (allEdges[each].hasOwnProperty(eachProp)) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                          else if (arguments[0] === 'node') {
+                              for (let each in allNodes) {
+                                  if (allNodes.hasOwnProperty(each)) {
+                                      for (let eachProp in allNodes[each]) {
+                                          if (allNodes[each].hasOwnProperty(eachProp)
+                                              && (eachProp !== 'hidden' && eachProp !== 'savedLabel'
+                                                  && eachProp !== 'hiddenLabel')) {
+                                              propControl.addOption({id: eachProp, title: eachProp})
+
+                                          }
+                                      }
+                                  }
+                              }
+                          }
+                      }
+                  };
+
+                  let itemControl = new TomSelect("#select-item",{
+                      create: false,
+                      sortField:{
+                          field: "text",
+                          direction: "asc"
+                      },
+                      onItemAdd: addProperties()
+                  });
+
+                  function clearFilter(reset) {
+                      // utility function to clear all the selected filter options
+                      // if reset is set to true, the existing filter will be removed
+                      // else, only the dropdown options are cleared
+                      propControl.clear();
+                      propControl.clearOptions();
+                      valueControl.clear();
+                      valueControl.clearOptions();
+                      filter = {
+                          item : '',
+                          property : '',
+                          value : []
+                      }
+                      if (reset) {
+                          itemControl.clear();
+                          filterHighlight({nodes: []})
+                      }
+                  }
+
+                  function updateFilter(value, key) {
+                      // key could be 'item' or 'property' and value is as selected in dropdown
+                      filter[key] = value
+                  }
+
+              
+
+              // This method is responsible for drawing the graph, returns the drawn network
+              function drawGraph() {
+                  var container = document.getElementById('mynetwork');
+
+                  
+
+                  // parsing and collecting nodes and edges from the python
+                  nodes = new vis.DataSet([{"color": "#00FF00", "id": "presentedMAIN", "label": "presentedMAIN", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "MEASURES_Indications", "label": "MEASURES_Indications", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "We", "label": "We", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "data", "label": "data", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     ", "label": "using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     ", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "care", "label": "care", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "who", "label": "who", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroid_surgery", "label": "thyroid_surgery", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroidectomy_procedures", "label": "thyroidectomy_procedures", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "neck_dissection", "label": "neck_dissection", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "completion_thyroidectomy", "label": "completion_thyroidectomy", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "aspiration_FNA", "label": "aspiration_FNA", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "node_metastasis", "label": "node_metastasis", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "metastases", "label": "metastases", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Sixtysix_patients", "label": "Sixtysix_patients", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "cancer", "label": "cancer", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "patients", "label": "patients", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "iodine", "label": "iodine", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "testing", "label": "testing", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "preoperative_cords_assessment", "label": "preoperative_cords_assessment", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "procedures", "label": "procedures", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "recurrences", "label": "recurrences", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "RAI", "label": "RAI", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "outcomes", "label": "outcomes", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroid_surgery_Specific_data", "label": "thyroid_surgery_Specific_data", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Specific_data", "label": "Specific_data", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Patients", "label": "Patients", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "search", "label": "search", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroidectomy_Surgeries", "label": "thyroidectomy_Surgeries", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "adult_surgeon_surgeon", "label": "adult_surgeon_surgeon", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "nerve_monitoring", "label": "nerve_monitoring", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "series_procedures", "label": "series_procedures", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "endocrine_surgeons", "label": "endocrine_surgeons", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "approach", "label": "approach", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "surgeons_endocrine_surgeons", "label": "surgeons_endocrine_surgeons", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "range", "label": "range", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Transient_hypocalcemia", "label": "Transient_hypocalcemia", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "comparisons", "label": "comparisons", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection", "label": "thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "pathology", "label": "pathology", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "cancer_MTC", "label": "cancer_MTC", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Eightyone_patients", "label": "Eightyone_patients", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroid_cancer_goiter_Table_Indications", "label": "thyroid_cancer_goiter_Table_Indications", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "case", "label": "case", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroid_cancer", "label": "thyroid_cancer", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "which", "label": "which", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "FNA", "label": "FNA", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "notion", "label": "notion", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "they", "label": "they", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "surgery", "label": "surgery", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "thyroidectomy_Hypocalcemia", "label": "thyroidectomy_Hypocalcemia", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "calcium_levels", "label": "calcium_levels", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "complications", "label": "complications", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "node_metastasis_patients", "label": "node_metastasis_patients", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "lung_None", "label": "lung_None", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "wound_infection_tracheal_injury", "label": "wound_infection_tracheal_injury", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "resection", "label": "resection", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "cases", "label": "cases", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "iodine_RAI", "label": "iodine_RAI", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Children", "label": "Children", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "risk", "label": "risk", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "studies", "label": "studies", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "sensitivity_specificity", "label": "sensitivity_specificity", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "predictors_involvement_subtype_tumor_stage", "label": "predictors_involvement_subtype_tumor_stage", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "this", "label": "this", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "number", "label": "number", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "us", "label": "us", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "THYROID_MED_JULYAUGUST", "label": "THYROID_MED_JULYAUGUST", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "hypocalcemia", "label": "hypocalcemia", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "to_reach_statistical_significance", "label": "to_reach_statistical_significance", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "it", "label": "it", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "that", "label": "that", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "previously26_Multiple_studies", "label": "previously26_Multiple_studies", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "study", "label": "study", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "highvolume_endocrine_surgeons", "label": "highvolume_endocrine_surgeons", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "outcomes_lengths", "label": "outcomes_lengths", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "This", "label": "This", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "authors", "label": "authors", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "nature", "label": "nature", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "validity_quality", "label": "validity_quality", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Hameed_R_Zacharin", "label": "Hameed_R_Zacharin", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "management", "label": "management", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Brain_P_Butler_G_et_al_Thyroid_Surgery_Eur_J_Pediatr_Surg", "label": "Brain_P_Butler_G_et_al_Thyroid_Surgery_Eur_J_Pediatr_Surg", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "LX_Cai_Y_Schwenk_et_al_Pediatric_Endocrine_Surgery", "label": "LX_Cai_Y_Schwenk_et_al_Pediatric_Endocrine_Surgery", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "I", "label": "I", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "factor_analysis", "label": "factor_analysis", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "size_interpretation_model_Onco", "label": "size_interpretation_model_Onco", "shape": "circle", "size": 10}, {"color": "#00FF00", "id": "Ther_\u0093_Papillary_thyroid_carcinoma_Barisella_M_Ferrari", "label": "Ther_\u0093_Papillary_thyroid_carcinoma_Barisella_M_Ferrari", "shape": "circle", "size": 10}]);
+                  edges = new vis.DataSet([{"arrows": "to", "from": "presentedMAIN", "relation": "are_OUTCOME", "to": "MEASURES_Indications", "width": 1}, {"arrows": "to", "from": "We", "relation": "collected", "to": "data", "width": 1}, {"arrows": "to", "from": "data", "relation": "were_generated", "to": "using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     ", "width": 1}, {"arrows": "to", "from": "data", "relation": "do_not_allow", "to": "care", "width": 1}, {"arrows": "to", "from": "who", "relation": "underwent", "to": "thyroid_surgery", "width": 1}, {"arrows": "to", "from": "who", "relation": "underwent", "to": "thyroidectomy_procedures", "width": 1}, {"arrows": "to", "from": "who", "relation": "had", "to": "neck_dissection", "width": 1}, {"arrows": "to", "from": "who", "relation": "underwent", "to": "completion_thyroidectomy", "width": 1}, {"arrows": "to", "from": "aspiration_FNA", "relation": "had", "to": "node_metastasis", "width": 1}, {"arrows": "to", "from": "aspiration_FNA", "relation": "had", "to": "metastases", "width": 1}, {"arrows": "to", "from": "Sixtysix_patients", "relation": "had", "to": "cancer", "width": 1}, {"arrows": "to", "from": "patients", "relation": "received", "to": "iodine", "width": 1}, {"arrows": "to", "from": "patients", "relation": "underwent", "to": "testing", "width": 1}, {"arrows": "to", "from": "patients", "relation": "had", "to": "preoperative_cords_assessment", "width": 1}, {"arrows": "to", "from": "patients", "relation": "had", "to": "procedures", "width": 1}, {"arrows": "to", "from": "patients", "relation": "had", "to": "recurrences", "width": 1}, {"arrows": "to", "from": "patients", "relation": "received", "to": "RAI", "width": 1}, {"arrows": "to", "from": "outcomes", "relation": "were_reviewed", "to": "thyroid_surgery_Specific_data", "width": 1}, {"arrows": "to", "from": "outcomes", "relation": "were_collected", "to": "Specific_data", "width": 1}, {"arrows": "to", "from": "Patients", "relation": "were_identified", "to": "search", "width": 1}, {"arrows": "to", "from": "thyroidectomy_Surgeries", "relation": "were_performed", "to": "adult_surgeon_surgeon", "width": 1}, {"arrows": "to", "from": "nerve_monitoring", "relation": "was_used", "to": "adult_surgeon_surgeon", "width": 1}, {"arrows": "to", "from": "series_procedures", "relation": "were_performed", "to": "endocrine_surgeons", "width": 1}, {"arrows": "to", "from": "approach", "relation": "was_adopted", "to": "endocrine_surgeons", "width": 1}, {"arrows": "to", "from": "approach", "relation": "would_have", "to": "outcomes", "width": 1}, {"arrows": "to", "from": "approach", "relation": "may_optimize", "to": "care", "width": 1}, {"arrows": "to", "from": "surgeons_endocrine_surgeons", "relation": "collaborated", "to": "range", "width": 1}, {"arrows": "to", "from": "Transient_hypocalcemia", "relation": "was_identified_were", "to": "endocrine_surgeons", "width": 1}, {"arrows": "to", "from": "comparisons", "relation": "were_conducted", "to": "using_the_t_test_for_continuous_data_and_the_chisquare_or_Fisher_exact_tests_for_proportionsRESULTSBetween_   _and_     ", "width": 1}, {"arrows": "to", "from": "procedures", "relation": "included", "to": "thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection", "width": 1}, {"arrows": "to", "from": "pathology", "relation": "showed", "to": "cancer_MTC", "width": 1}, {"arrows": "to", "from": "Eightyone_patients", "relation": "were", "to": "thyroid_cancer_goiter_Table_Indications", "width": 1}, {"arrows": "to", "from": "case", "relation": "included", "to": "thyroid_cancer_goiter_Table_Indications", "width": 1}, {"arrows": "to", "from": "case", "relation": "had", "to": "thyroid_cancer", "width": 1}, {"arrows": "to", "from": "which", "relation": "did_not_require", "to": "FNA", "width": 1}, {"arrows": "to", "from": "which", "relation": "supports", "to": "notion", "width": 1}, {"arrows": "to", "from": "they", "relation": "came", "to": "FNA", "width": 1}, {"arrows": "to", "from": "they", "relation": "had", "to": "surgery", "width": 1}, {"arrows": "to", "from": "thyroidectomy_Hypocalcemia", "relation": "was_defined", "to": "calcium_levels", "width": 1}, {"arrows": "to", "from": "complications", "relation": "were_observed", "to": "thyroidectomy_hemithyroidectomy_completion_thyroidectomy_Neck_dissection", "width": 1}, {"arrows": "to", "from": "node_metastasis_patients", "relation": "had_had", "to": "metastases", "width": 1}, {"arrows": "to", "from": "lung_None", "relation": "developed", "to": "wound_infection_tracheal_injury", "width": 1}, {"arrows": "to", "from": "recurrences", "relation": "underwent", "to": "resection", "width": 1}, {"arrows": "to", "from": "cases", "relation": "received", "to": "iodine_RAI", "width": 1}, {"arrows": "to", "from": "Children", "relation": "have", "to": "risk", "width": 1}, {"arrows": "to", "from": "studies", "relation": "reported", "to": "sensitivity_specificity", "width": 1}, {"arrows": "to", "from": "studies", "relation": "explored", "to": "predictors_involvement_subtype_tumor_stage", "width": 1}, {"arrows": "to", "from": "this", "relation": "may_explain", "to": "number", "width": 1}, {"arrows": "to", "from": "number", "relation": "did_not_enable", "to": "us", "width": 1}, {"arrows": "to", "from": "number", "relation": "received", "to": "THYROID_MED_JULYAUGUST", "width": 1}, {"arrows": "to", "from": "hypocalcemia", "relation": "was_noted", "to": "to_reach_statistical_significance", "width": 1}, {"arrows": "to", "from": "it", "relation": "failed", "to": "to_reach_statistical_significance", "width": 1}, {"arrows": "to", "from": "that", "relation": "was_reported", "to": "previously26_Multiple_studies", "width": 1}, {"arrows": "to", "from": "study", "relation": "found", "to": "to_reach_statistical_significance", "width": 1}, {"arrows": "to", "from": "highvolume_endocrine_surgeons", "relation": "have", "to": "outcomes_lengths", "width": 1}, {"arrows": "to", "from": "This", "relation": "has_led", "to": "authors", "width": 1}, {"arrows": "to", "from": "nature", "relation": "may_affect", "to": "validity_quality", "width": 1}, {"arrows": "to", "from": "Hameed_R_Zacharin", "relation": "nodules", "to": "management", "width": 1}, {"arrows": "to", "from": "Brain_P_Butler_G_et_al_Thyroid_Surgery_Eur_J_Pediatr_Surg", "relation": "Oct2554259", "to": "LX_Cai_Y_Schwenk_et_al_Pediatric_Endocrine_Surgery", "width": 1}, {"arrows": "to", "from": "I", "relation": "risk", "to": "factor_analysis", "width": 1}, {"arrows": "to", "from": "size_interpretation_model_Onco", "relation": "Targets", "to": "Ther_\u0093_Papillary_thyroid_carcinoma_Barisella_M_Ferrari", "width": 1}]);
+
+                  nodeColors = {};
+                  allNodes = nodes.get({ returnType: "Object" });
+                  for (nodeId in allNodes) {
+                    nodeColors[nodeId] = allNodes[nodeId].color;
+                  }
+                  allEdges = edges.get({ returnType: "Object" });
+                  // adding nodes and edges to the graph
+                  data = {nodes: nodes, edges: edges};
+
+                  var options = {
+    "configure": {
+        "enabled": false
+    },
+    "edges": {
+        "color": {
+            "inherit": true
+        },
+        "smooth": {
+            "enabled": true,
+            "type": "dynamic"
+        }
+    },
+    "interaction": {
+        "dragNodes": true,
+        "hideEdgesOnDrag": false,
+        "hideNodesOnDrag": false
+    },
+    "physics": {
+        "enabled": true,
+        "stabilization": {
+            "enabled": true,
+            "fit": true,
+            "iterations": 1000,
+            "onlyDynamicEdges": false,
+            "updateInterval": 50
+        }
+    }
+};
+
+                  
+
+
+                  
+
+                  network = new vis.Network(container, data, options);
+
+                  
+
+                  
+                    network.on("selectNode", neighbourhoodHighlight);
+                  
+
+                  
+
+
+                  
+
+                  return network;
+
+              }
+              drawGraph();
+        </script>
+    </body>
+</html>
