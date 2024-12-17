@@ -1,4 +1,4 @@
-# cancer_inconsistency
+# Inconsistency detection in cancer data classification using explainable-AI
 
 preprint: https://www.medrxiv.org/content/10.1101/2024.10.02.24314783v1
 
