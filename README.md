@@ -99,7 +99,7 @@ Contributions are welcome! If you have suggestions for improvements or new featu
 
 This project is licensed under the [MIT License](LICENSE).
 
-## References
+## Preprint and Dataset
 
 - [Preprint: Inconsistency Detection in Cancer Data Classification Using Explainable AI](https://www.medrxiv.org/content/10.1101/2024.10.02.24314783v1)
 - [Biomedical Text Publication Classification Dataset](https://www.kaggle.com/datasets/falgunipatel19/biomedical-text-publication-classification)
