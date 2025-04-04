@@ -1,6 +1,6 @@
 # Inconsistency Detection in Cancer Data Classification Using Explainable AI
 
-This repository contains the code and resources for the project **"Inconsistency Detection in Cancer Data Classification Using Explainable AI"**. The project focuses on identifying inconsistencies in cancer data classifications by leveraging explainable artificial intelligence (AI) techniques.
+This repository contains the code and resources for the project **"Inconsistency Detection in Cancer Data Classification Using Explainable AI"**. The project focuses on identifying inconsistencies in cancer data classifications by leveraging explainable artificial intelligence (AI) techniques. 
 
 [Preprint: Inconsistency Detection in Cancer Data Classification Using Explainable AI](https://www.medrxiv.org/content/10.1101/2024.10.02.24314783v1)
 
